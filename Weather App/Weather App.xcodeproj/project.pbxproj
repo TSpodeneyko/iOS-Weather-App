@@ -66,6 +66,7 @@
 			children = (
 				7BE08C692BB11D590086D17E /* Application */,
 				7BE08C6A2BB11D8E0086D17E /* Models */,
+				7B7A1EB42BB20C2F00E1D8B1 /* Services */,
 				7B7A1EB32BB20B9900E1D8B1 /* Modules */,
 				7BE08C712BB11DDD0086D17E /* Extensions */,
 				7BE08C742BB11DF60086D17E /* Supports */,
@@ -105,7 +106,6 @@
 			isa = PBXGroup;
 			children = (
 				7BE08C6B2BB11D9F0086D17E /* WeatherData.swift */,
-				7B7A1EB42BB20C2F00E1D8B1 /* Services */,
 			);
 			path = Models;
 			sourceTree = "<group>";
