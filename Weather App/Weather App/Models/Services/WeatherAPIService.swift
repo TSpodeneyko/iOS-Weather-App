@@ -1,5 +1,5 @@
 //
-//  WeatherService.swift
+//  WeatherAPIService.swift
 //  Weather App
 //
 //  Created by Timofey Spodeneyko on 25.03.2024.

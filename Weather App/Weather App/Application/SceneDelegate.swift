@@ -16,11 +16,33 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // Use this method to optionally configure and attach the UIWindow `window` to the provided UIWindowScene `scene`.
         // If using a storyboard, the `window` property will automatically be initialized and attached to the scene.
         // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
-        guard let windowScene = scene as? UIWindowScene else { return }
-        window = UIWindow(frame: windowScene.coordinateSpace.bounds)
-        window?.windowScene = windowScene
-        window?.rootViewController = MainViewController()
-        window?.makeKeyAndVisible()
+        guard let windowScene = (scene as? UIWindowScene) else { return }
+
+        let window = UIWindow(windowScene: windowScene)
+        self.window = window
+
+        let launchScreenViewController = UIViewController()
+        launchScreenViewController.view.backgroundColor = .white
+
+        let logoImageView = UIImageView(image: UIImage(named: "AppIcon"))
+        logoImageView.contentMode = .scaleAspectFit
+        logoImageView.translatesAutoresizingMaskIntoConstraints = false
+        launchScreenViewController.view.addSubview(logoImageView)
+
+        NSLayoutConstraint.activate([
+            logoImageView.centerXAnchor.constraint(equalTo: launchScreenViewController.view.centerXAnchor),
+            logoImageView.centerYAnchor.constraint(equalTo: launchScreenViewController.view.centerYAnchor),
+            logoImageView.widthAnchor.constraint(equalToConstant: 200),
+            logoImageView.heightAnchor.constraint(equalToConstant: 200)
+        ])
+
+        window.rootViewController = launchScreenViewController
+        window.makeKeyAndVisible()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            let mainViewController = MainViewController()
+            window.rootViewController = mainViewController
+        }
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {

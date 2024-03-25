@@ -5,19 +5,17 @@
 //  Created by Timofey Spodeneyko on 25.03.2024.
 //
 
-import Foundation
-
-struct CurrentWeatherAPIResponse: Decodable {
+struct CurrentWeatherAPIResponse: Codable {
     let data: CurrentWeatherData
     let location: Location
 }
 
-struct CurrentWeatherData: Decodable {
+struct CurrentWeatherData: Codable {
     let time: String
     let values: CurrentWeatherValues
 }
 
-struct CurrentWeatherValues: Decodable {
+struct CurrentWeatherValues: Codable {
     let cloudCover: Int
     let humidity: Int
     let precipitationProbability: Int
@@ -30,26 +28,26 @@ struct CurrentWeatherValues: Decodable {
     let windSpeed: Double
 }
 
-struct Location: Decodable {
+struct Location: Codable {
     let lat: Double
     let lon: Double
 }
 
-struct WeeklyWeatherAPIResponse: Decodable {
+struct WeeklyWeatherAPIResponse: Codable {
     let timelines: Timelines
     let location: Location
 }
 
-struct Timelines: Decodable {
+struct Timelines: Codable {
     let daily: [WeekendDailyWeatherData]
 }
 
-struct WeekendDailyWeatherData: Decodable {
+struct WeekendDailyWeatherData: Codable {
     let time: String
     let values: WeeklyWeatherValues
 }
 
-struct WeeklyWeatherValues: Decodable {
+struct WeeklyWeatherValues: Codable {
     let temperatureAvg: Double
     let temperatureMin: Double
     let temperatureMax: Double
