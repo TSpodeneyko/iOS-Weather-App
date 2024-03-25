@@ -37,9 +37,4 @@ class CacheService {
             return nil
         }
     }
-
-    func shouldUseCachedData(currentLocation: CLLocation, lastLocation: CLLocation?, maxDistance: Double = 1000) -> Bool {
-        guard let lastLocation = lastLocation else { return true }
-        return currentLocation.distance(from: lastLocation) < maxDistance
-    }
 }

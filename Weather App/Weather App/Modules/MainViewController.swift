@@ -10,18 +10,30 @@ import CoreLocation
 import Network
 
 class MainViewController: UIViewController {
-    
+
     private var locationManager: CLLocationManager?
-    private var currentLocation: CLLocation?
-    private var lastKnownLocation: CLLocation?
     private var currentWeatherData: CurrentWeatherAPIResponse?
     private var weeklyWeatherData: WeeklyWeatherAPIResponse?
-    private lazy var weatherService = WeatherService()
-    
+    private let weatherService = WeatherService()
+
     // MARK: - UI Components
     private let scrollView = UIScrollView()
     private let contentView = UIView()
-    
+
+    private let gradientLayer: CAGradientLayer = {
+        let gradientLayer = CAGradientLayer()
+        gradientLayer.colors = [UIColor.blueA800.cgColor, UIColor.whiteBlue20.cgColor]
+        gradientLayer.startPoint = CGPoint(x: 0.5, y: 0.3)
+        gradientLayer.endPoint = CGPoint(x: 0.5, y: 1)
+        return gradientLayer
+    }()
+
+    private let activityIndicator: UIActivityIndicatorView = {
+        let indicator = UIActivityIndicatorView(style: .large)
+        indicator.color = .white
+        return indicator
+    }()
+
     private lazy var citySearchBar: UISearchBar = {
         let searchBar = UISearchBar()
         searchBar.delegate = self
@@ -47,6 +59,27 @@ class MainViewController: UIViewController {
         return searchBar
     }()
 
+    private lazy var currentPlaceLabel: UILabel = {
+        let label = UILabel()
+        label.numberOfLines = 2
+        label.lineBreakMode = .byWordWrapping
+        label.font = .boldSystemFont(ofSize: 24)
+        return label
+    }()
+
+    private let currentTempLabel: UILabel = {
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 72)
+        return label
+    }()
+
+    private let currentWeatherDescLabel = UILabel()
+    private let currentTempFeelLikeLabel = UILabel()
+    private let currentWindSpeedLabel = UILabel()
+    private let currentCloudPercLabel = UILabel()
+    private let currentHumidityLabel = UILabel()
+    private let currentFallProbLabel = UILabel()
+
     private let currentWeatherStackView: UIStackView = {
         let stackView = UIStackView()
         stackView.axis = .vertical
@@ -56,42 +89,13 @@ class MainViewController: UIViewController {
         stackView.layer.cornerRadius = 10
         return stackView
     }()
-    
-    private lazy var weeklyForecastLabel: UILabel = {
+
+    private let weeklyForecastLabel: UILabel = {
         let label = UILabel()
         label.text = "Прогноз на 5 дней"
         label.font = .boldSystemFont(ofSize: 24)
         return label
     }()
-    
-    private lazy var gradientLayer: CAGradientLayer = {
-        let gradientLayer = CAGradientLayer()
-        gradientLayer.colors = [UIColor.blueA800.cgColor, UIColor.whiteBlue20.cgColor]
-        gradientLayer.startPoint = CGPoint(x: 0.5, y: 0.3)
-        gradientLayer.endPoint = CGPoint(x: 0.5, y: 1)
-        return gradientLayer
-    }()
-    
-    private lazy var currentPlaceLabel: UILabel = {
-        let label = UILabel()
-        label.numberOfLines = 2
-        label.lineBreakMode = .byWordWrapping
-        label.font = .boldSystemFont(ofSize: 24)
-        return label
-    }()
-    
-    private lazy var currentTempLabel: UILabel = {
-        let label = UILabel()
-        label.font = .systemFont(ofSize: 72)
-        return label
-    }()
-    
-    private lazy var currentWeatherDescLabel = UILabel()
-    private lazy var currentTempFeelLikeLabel = UILabel()
-    private lazy var currentWindSpeedLabel = UILabel()
-    private lazy var currentCloudPercLabel = UILabel()
-    private lazy var currentHumidityLabel = UILabel()
-    private lazy var currentFallProbLabel = UILabel()
 
     private lazy var weeklyForecastCollectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
@@ -104,21 +108,21 @@ class MainViewController: UIViewController {
         collectionView.register(WeeklyWeatherCollectionViewCell.self, forCellWithReuseIdentifier: WeeklyWeatherCollectionViewCell.identifier)
         return collectionView
     }()
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+
         setupUI()
         setupConstraints()
         setupLocationManager()
     }
-    
+
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         
         gradientLayer.frame = view.bounds
     }
-    
+
     private func setupUI() {
         view.layer.insertSublayer(gradientLayer, at: 0)
         [citySearchBar, scrollView, contentView].forEach { $0.translatesAutoresizingMaskIntoConstraints = false; view.addSubview($0) }
@@ -127,7 +131,7 @@ class MainViewController: UIViewController {
         [currentPlaceLabel, currentTempLabel, currentWeatherStackView, weeklyForecastLabel, weeklyForecastCollectionView].forEach { $0.translatesAutoresizingMaskIntoConstraints = false; contentView.addSubview($0) }
         [currentPlaceLabel, currentTempLabel, currentTempFeelLikeLabel, currentWeatherDescLabel, currentWindSpeedLabel, currentCloudPercLabel, currentHumidityLabel, currentFallProbLabel, weeklyForecastLabel].forEach { $0.textColor = .white; }
     }
-    
+
     // MARK: - Constraints
     private func setupConstraints() {
         NSLayoutConstraint.activate([
@@ -135,19 +139,19 @@ class MainViewController: UIViewController {
             citySearchBar.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: UIConstants.leadingMargin),
             citySearchBar.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: UIConstants.trailingMArgin),
             citySearchBar.heightAnchor.constraint(equalToConstant: UIConstants.searchBarHeight),
-            
+
             scrollView.topAnchor.constraint(equalTo: citySearchBar.bottomAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            
+
             contentView.topAnchor.constraint(equalTo: scrollView.topAnchor),
             contentView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
             contentView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
             contentView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
             contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
             contentView.heightAnchor.constraint(greaterThanOrEqualTo: view.heightAnchor),
-            
+
             currentPlaceLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: UIConstants.defaultMargin),
             currentPlaceLabel.leadingAnchor.constraint(greaterThanOrEqualTo: contentView.leadingAnchor, constant: UIConstants.leadingMargin),
             currentPlaceLabel.trailingAnchor.constraint(lessThanOrEqualTo: contentView.trailingAnchor, constant: UIConstants.trailingMArgin),
@@ -159,17 +163,19 @@ class MainViewController: UIViewController {
             currentWeatherStackView.topAnchor.constraint(equalTo: currentTempLabel.bottomAnchor, constant: UIConstants.defaultMargin),
             currentWeatherStackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: UIConstants.leadingMargin),
             currentWeatherStackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: UIConstants.trailingMArgin),
-            
+
             weeklyForecastLabel.topAnchor.constraint(equalTo: currentWeatherStackView.bottomAnchor, constant: UIConstants.largeMargin),
+            weeklyForecastLabel.leadingAnchor.constraint(greaterThanOrEqualTo: contentView.leadingAnchor, constant: UIConstants.leadingMargin),
+            weeklyForecastLabel.trailingAnchor.constraint(lessThanOrEqualTo: contentView.trailingAnchor, constant: UIConstants.trailingMArgin),
             weeklyForecastLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
-            
+
             weeklyForecastCollectionView.topAnchor.constraint(equalTo: weeklyForecastLabel.bottomAnchor, constant: UIConstants.defaultMargin),
             weeklyForecastCollectionView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: UIConstants.leadingMargin),
             weeklyForecastCollectionView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: UIConstants.trailingMArgin),
             weeklyForecastCollectionView.heightAnchor.constraint(equalToConstant: UIConstants.weeklyForecastCollectionViewHeight),
         ])
     }
-    
+
     // MARK: - Methods
     func setupLocationManager() {
         locationManager = CLLocationManager()
@@ -179,36 +185,32 @@ class MainViewController: UIViewController {
         locationManager?.startUpdatingLocation()
     }
 
-    func getPlaceName(location: Location, completion: @escaping (String?) -> Void) {
-        checkInternetConnection { isConnected in
-            DispatchQueue.main.async {
-                if isConnected {
-                    let geocoder = CLGeocoder()
-                    let clLocation = CLLocation(latitude: location.lat, longitude: location.lon)
-                    geocoder.reverseGeocodeLocation(clLocation) { [weak self] (placemarks, error) in
-                        guard let self = self, error == nil else {
-                            print("Ошибка обратного геокодирования: \(error!.localizedDescription)")
-                            if let cachedAddress = CacheService.shared.loadFromCache(fileName: "LastLocationAddress.json", type: String.self) {
-                                completion(cachedAddress)
-                            } else {
-                                self?.showError(message: "Что-то пошло не так...\nПопробуйте зайти позже.")
-                            }
-                            return
-                        }
-                        
-                        if let placemark = placemarks?.first, let city = placemark.locality, let country = placemark.country {
-                            let address = "\(city), \(country)"
-                            CacheService.shared.saveToCache(address, fileName: "LastLocationAddress.json")
-                            completion(address)
-                        } else {
-                            completion(nil)
-                        }
-                    }
-                } else if let cachedAddress = CacheService.shared.loadFromCache(fileName: "LastLocationAddress.json", type: String.self) {
-                    completion(cachedAddress)
-                } else {
-                    self.showError(message: "Нет интернет соединения и нет кешированных данных")
+    private func getPlaceName(location: Location, completion: @escaping (String?) -> Void) {
+        let clLocation = CLLocation(latitude: location.lat, longitude: location.lon)
+        let geocoder = CLGeocoder()
+
+        geocoder.reverseGeocodeLocation(clLocation) { (placemarks, error) in
+            guard error == nil else {
+                print("Ошибка обратного геокодирования: \(error!.localizedDescription)")
+                self.showError(message: "Что-то пошло не так...\nПопробуйте зайти позже.")
+                completion(nil)
+                return
+            }
+
+            if let placemark = placemarks?.first {
+                var placeNameComponents = [String]()
+                if let city = placemark.locality {
+                    placeNameComponents.append(city)
                 }
+                if let country = placemark.country {
+                    placeNameComponents.append(country)
+                }
+                let placeName = placeNameComponents.joined(separator: ", ")
+                CacheService.shared.saveToCache(placeName, fileName: "CurrentLocation.json")
+                completion(placeName)
+            } else {
+                self.showError(message: "Что-то пошло не так...\nПопробуйте зайти позже.")
+                completion(nil)
             }
         }
     }
@@ -229,21 +231,6 @@ class MainViewController: UIViewController {
             }
         }
     }
-    
-    func checkInternetConnection(completion: @escaping (Bool) -> Void) {
-        let monitor = NWPathMonitor()
-        monitor.pathUpdateHandler = { path in
-            if path.status == .satisfied {
-                completion(true)
-            } else {
-                completion(false)
-            }
-            monitor.cancel()
-        }
-
-        let queue = DispatchQueue.global(qos: .background)
-        monitor.start(queue: queue)
-    }
 
     private func loadWeatherData(latitude: Double, longitude: Double) {
         checkInternetConnection { isConnected in
@@ -251,8 +238,16 @@ class MainViewController: UIViewController {
                 if isConnected {
                     self.fetchWeatherDataFromNetwork(latitude: latitude, longitude: longitude)
                 } else {
-                    self.useCachedData()
-                    self.showAlertWith(message: "Нет соединения с интернетом, использованы последние сохраненные данные.")
+                    if let cachedWeatherData: CurrentWeatherAPIResponse = CacheService.shared.loadFromCache(fileName: "CurrentWeather.json", type: CurrentWeatherAPIResponse.self),
+                       let cachedWeeklyData: WeeklyWeatherAPIResponse = CacheService.shared.loadFromCache(fileName: "WeeklyWeather.json", type: WeeklyWeatherAPIResponse.self) {
+                        self.currentWeatherData = cachedWeatherData
+                        self.weeklyWeatherData = cachedWeeklyData
+                        self.updateCurrentWeatherDisplay(currentWeatherAPIResponse: cachedWeatherData)
+                        self.weeklyForecastCollectionView.reloadData()
+                        self.showAlertWith(message: "Нет соединения с интернетом, использованы последние сохраненные данные.")
+                    } else {
+                        self.showError(message: "Нет соединения с интернетом и нет кешированных данных.")
+                    }
                 }
             }
         }
@@ -266,7 +261,7 @@ class MainViewController: UIViewController {
                     self?.updateCurrentWeatherDisplay(currentWeatherAPIResponse: response)
                     CacheService.shared.saveToCache(response, fileName: "CurrentWeather.json")
                 } else {
-//                    self?.showError(message: "Что-то пошло не так...\nПопробуйте зайти позже.")
+                    self?.showError(message: "Не удалось обновить текущий прогноз.\nПопробуйте зайти позже.")
                 }
             }
         }
@@ -278,30 +273,24 @@ class MainViewController: UIViewController {
                     self?.weeklyForecastCollectionView.reloadData()
                     CacheService.shared.saveToCache(response, fileName: "WeeklyWeather.json")
                 } else {
-//                    self?.showError(message: "Что-то пошло не так...\nПопробуйте зайти позже.")
+                    self?.showError(message: "Не удалось обновить недельный прогноз.\nПопробуйте зайти позже.")
                 }
             }
         }
     }
 
-    private func useCachedData() {
-        if let cachedCurrentWeather = CacheService.shared.loadFromCache(fileName: "CurrentWeather.json", type: CurrentWeatherAPIResponse.self) {
-            self.currentWeatherData = cachedCurrentWeather
-            updateCurrentWeatherDisplay(currentWeatherAPIResponse: cachedCurrentWeather)
-        }
-
-        if let cachedWeeklyWeather = CacheService.shared.loadFromCache(fileName: "WeeklyWeather.json", type: WeeklyWeatherAPIResponse.self) {
-            self.weeklyWeatherData = cachedWeeklyWeather
-            weeklyForecastCollectionView.reloadData()
-        }
-    }
-
     private func updateCurrentWeatherDisplay(currentWeatherAPIResponse: CurrentWeatherAPIResponse) {
         let currentWeatherData = currentWeatherAPIResponse.data
-        let location = currentWeatherAPIResponse.location
-        getPlaceName(location: location) { [weak self] placeName in
+        checkInternetConnection { isConnected in
             DispatchQueue.main.async {
-                self?.currentPlaceLabel.text = placeName ?? "Местоположение неизвестно"
+                if isConnected {
+                    let location = currentWeatherAPIResponse.location
+                    self.getPlaceName(location: location) { [weak self] placeName in
+                        self?.currentPlaceLabel.text = placeName ?? "Местоположение неизвестно"
+                    }
+                } else {
+                    self.currentPlaceLabel.text = CacheService.shared.loadFromCache(fileName: "CurrentLocation.json", type: String.self)
+                }
             }
         }
         var roundedTemp = Int(round(currentWeatherData.values.temperature))
@@ -326,23 +315,49 @@ class MainViewController: UIViewController {
         currentHumidityLabel.text = "Влажность: \(currentWeatherData.values.humidity) %"
         currentFallProbLabel.text = "Вероятность осадков: \(currentWeatherData.values.precipitationProbability) %"
     }
-    
-    private func showError(message: String) {
-        hideAllElements(except: weeklyForecastLabel)
-        self.scrollView.isScrollEnabled = false
-        self.currentWeatherStackView.backgroundColor = .clear
-        self.weeklyForecastLabel.textAlignment = .center
-        self.weeklyForecastLabel.numberOfLines = 3
-        self.weeklyForecastLabel.lineBreakMode = .byWordWrapping
-        self.weeklyForecastLabel.text = message
+
+    func checkInternetConnection(completion: @escaping (Bool) -> Void) {
+        let monitor = NWPathMonitor()
+        monitor.pathUpdateHandler = { path in
+            if path.status == .satisfied {
+                completion(true)
+            } else {
+                completion(false)
+            }
+            monitor.cancel()
+        }
+
+        let queue = DispatchQueue.global(qos: .background)
+        monitor.start(queue: queue)
     }
-    
+
+    func showLoadingIndicator() {
+        view.addSubview(activityIndicator)
+        activityIndicator.center = view.center
+        activityIndicator.startAnimating()
+    }
+
+    func hideLoadingIndicator() {
+        activityIndicator.stopAnimating()
+        activityIndicator.removeFromSuperview()
+    }
+
     private func showAlertWith(message: String) {
         let alert = UIAlertController(title: "Внимание", message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
         present(alert, animated: true)
     }
-    
+
+    private func showError(message: String) {
+        hideAllElements(except: weeklyForecastLabel)
+        self.scrollView.isScrollEnabled = false
+        self.currentWeatherStackView.backgroundColor = .clear
+        self.weeklyForecastLabel.textAlignment = .center
+        self.weeklyForecastLabel.numberOfLines = 4
+        self.weeklyForecastLabel.lineBreakMode = .byWordWrapping
+        self.weeklyForecastLabel.text = message
+    }
+
     private func hideAllElements(except label: UILabel) {
         let elementsToHide = [
             citySearchBar,
@@ -362,13 +377,10 @@ class MainViewController: UIViewController {
 extension MainViewController: CLLocationManagerDelegate {
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.first else { return }
-
-        if CacheService.shared.shouldUseCachedData(currentLocation: location, lastLocation: lastKnownLocation) {
-            lastKnownLocation = location
-            loadWeatherData(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude)
-        }
+        loadWeatherData(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude)
+        locationManager?.stopUpdatingLocation()
     }
-    
+
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         print("Ошибка получения геолокации: \(error)")
     }
@@ -386,20 +398,24 @@ extension MainViewController: CLLocationManagerDelegate {
 extension MainViewController: UISearchBarDelegate {
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
         guard let cityName = searchBar.text else { return }
-        getPlaceCoord(cityName: cityName) { [weak self] location in
-            guard let self = self, let location = location else {
-                self?.checkInternetConnection { isConnected in
-                    DispatchQueue.main.async {
-                        if isConnected {
+        self.showLoadingIndicator()
+        self.checkInternetConnection { isConnected in
+            DispatchQueue.main.async {
+                if isConnected {
+                    self.getPlaceCoord(cityName: cityName) { [weak self] location in
+                        guard let self = self, let location = location else {
+                            self?.hideLoadingIndicator()
                             self?.showAlertWith(message: "Город не найден. Проверьте правильность написания и повторите попытку.")
-                        } else {
-                            self?.showAlertWith(message: "Нет соединения с интернетом.")
+                            return
                         }
+                        self.hideLoadingIndicator()
+                        self.loadWeatherData(latitude: location.latitude, longitude: location.longitude)
                     }
+                } else {
+                    self.hideLoadingIndicator()
+                    self.showAlertWith(message: "Нет соединения с интернетом.")
                 }
-                return
             }
-            self.loadWeatherData(latitude: location.latitude, longitude: location.longitude)
         }
     }
 }
