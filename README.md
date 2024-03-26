@@ -5,4 +5,4 @@
 - MVC
 - Search city
 - Cache
-- Weather forecast for 5 days (free API limitation)
+- tomorrow.io Weather API (25 req/h limit and forecast only for 5 days on free plan)
